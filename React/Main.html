@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+        <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+        <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
+        </style>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="text/babel">
+            const SYMBOL_X = "X";
+            const SYMBOL_0 = "O";
+            let IG = 0;
+
+            function useGameState(){
+                const computerWinner = (cells) => { 
+                    const lines = [
+                        [0, 1, 2],
+                        [3, 4, 5],
+                        [6, 7, 8],
+                        [0, 3, 6],
+                        [1, 4, 7],
+                        [2, 5, 8],
+                        [0, 4, 8],
+                        [6, 4, 2],
+                    ];
+                    for (let i = 0; i < lines.length; i++) {
+                        const [a, b, c] = lines[i];
+
+                        if (
+                            cells[a] &&
+                            cells[a] === cells[b] &&
+                            cells[a] === cells[c]
+                        ) {
+                            return [a, b, c];
+                        }
+                    }
+                };
+
+
+                const [winnerStep, setWinnerStep] = React.useState(null);
+                const [currentStep, setCurrentStep] = React.useState(SYMBOL_0);
+                const [cells, setCells] = React.useState([null,null,null,null,null,null,null,null,null]);
+
+
+                const handleCellsClick = (index) => {
+                    if (cells[index] || winnerStep) {
+                        return;
+                    }
+
+                    const cellsCopy = cells.slice();
+                    cellsCopy[index] = currentStep;
+                    const winner = computerWinner(cellsCopy);
+
+                    setCells(cellsCopy);
+                    setCurrentStep(
+                        currentStep === SYMBOL_0 ? SYMBOL_X : SYMBOL_0
+                    );
+                    setWinnerStep(winner);
+                    IG++;
+                };
+
+                const winnerSymbol = winnerStep
+                    ? cells[winnerStep[0]]
+                    : undefined;
+
+
+                const resetGame = () => {
+                    setCells([null,null,null,null,null,null,null,null,null]);
+                    setCurrentStep(SYMBOL_0);
+                    document
+                        .querySelectorAll("button")
+                        .forEach((btn) => btn.classList.remove("winner"));
+                    setWinnerStep(null);
+                    IG = 0;
+                };
+
+                return {
+                    cells,
+                    currentStep,
+                    winnerStep,
+                    handleCellsClick,
+                    resetGame,
+                    winnerSymbol
+                }
+            }
+            function App() {
+
+                const [cells,
+                    currentStep,
+                    winnerStep,
+                    handleCellsClick,
+                    resetGame,
+                    winnerSymbol] = useGameState();
+                return (
+                    <div className="game">
+                        <GameInfo
+                            cells={cells}
+                            IG={IG}
+                            winnerStep={winnerStep}
+                            winnerSymbol={winnerSymbol}
+                            currentStep={currentStep}
+                        />
+
+
+                        <div className="game-field">
+                            {cells.map((symbol, index) => {
+
+                                const isWinner =
+                                    winnerStep &&
+                                    winnerStep.find(
+                                        (item) => item === index
+                                    ) !== undefined;
+
+                                return (
+                                    <GameButton
+                                        isWinner={isWinner}
+                                        onClick={() => handleCellsClick(index)}
+                                        symbol={symbol}
+                                    />
+                                );
+                            })}
+                        </div>
+
+
+                        <button id="btn1" onClick={() => resetGame()}>
+                            Начать заного
+                        </button>
+                    </div>
+                );
+            }
+            function GameInfo({
+                cells,
+                IG,
+                winnerStep,
+                winnerSymbol,
+                currentStep,
+            }) {
+                return (
+                    <div className="game-info">
+                        {cells[0] !== null &&
+                        cells[1] !== null &&
+                        cells[2] !== null &&
+                        cells[3] !== null &&
+                        cells[4] !== null &&
+                        cells[5] !== null &&
+                        cells[6] !== null &&
+                        cells[7] !== null &&
+                        cells[8] !== null &&
+                        IG != 0 ? (
+                            <div className="label">Ничья</div>
+                        )
+                        
+                        : winnerStep ? (
+                            <div className="label">
+                                Победитель :{" "}
+                                <GameSymbol
+                                    symbol={winnerSymbol || currentStep}
+                                />
+                            </div>
+                        )
+                        
+                        : (
+                            <div className="label">
+                                Ход :{" "}
+                                <GameSymbol
+                                    symbol={winnerSymbol || currentStep}
+                                />
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+
+
+            function GameButton({ isWinner, onClick, symbol }) {
+                return (
+                    <button
+                        className={`cell ${isWinner ? "winner" : ""}`}
+                        onClick={onClick}
+                    >
+                        {symbol ? <GameSymbol symbol={symbol} /> : null}
+                    </button>
+                );
+            }
+
+
+
+            function GameSymbol({ symbol }) {
+                const getSymbolClassName = (symbol) => {
+                    if (symbol === SYMBOL_0) return "symbol--o";
+                    if (symbol === SYMBOL_X) return "symbol--x";
+                    return "";
+                };
+                return (
+                    <span className={`symbol ${getSymbolClassName(symbol)}`}>
+                        {symbol}
+                    </span>
+                );
+            }
+
+
+
+            const root = ReactDOM.createRoot(document.getElementById("root"));
+            root.render(<App />);
+        </script>
+    </body>
+
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: max-content;
+            height: 100%;
+            width: 100%;
+            font-family: "Roboto", sans-serif;
+            font-size: medium;
+            font-weight: 900;
+        }
+        .game {
+            display: flex;
+            width: 500px;
+            height: 500px;
+            justify-content: center;
+            align-items: center;
+            margin: auto auto;
+            margin-top: 10%;
+            flex-direction: column;
+            border: 2px solid black;
+        }
+        .game-info {
+            padding: 0 0 20px 0;
+        }
+        .symbol--x {
+            color: red;
+        }
+        .symbol--o {
+            color: blue;
+        }
+        .game-field {
+            display: grid;
+            grid-template: 70px 70px 70px / 70px 70px 70px;
+        }
+        button {
+            margin: 3px;
+            font-size: medium;
+            font-weight: 900;
+            background-color: #fff;
+            border: 3px solid black;
+            font-family: "Roboto", sans-serif;
+        }
+
+        .winner {
+            background-color: #71ff46;
+        }
+        .wight {
+            color: #fff;
+        }
+    </style>
+</html>
